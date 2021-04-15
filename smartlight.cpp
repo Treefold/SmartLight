@@ -106,7 +106,6 @@ private:
             0 <= B && B <= 255)
             setResponse = smartLights[id].setColor(R, G, B);
 
-        // Sending some confirmation or error response.
         if (setResponse) {
             response.send(Http::Code::Ok, "The color of the Smart Light number " + std::to_string(id) + " was set to " +
                                            std::to_string(R) + ", "+ std::to_string(G) + ", " + std::to_string(B) + ".");
@@ -128,13 +127,6 @@ private:
         string valueSetting = smartLights[id].getColor();
 
         if (valueSetting != "") {
-
-            // In this response I also add a couple of headers, describing the server that sent this response, and the way the content is formatted.
-            using namespace Http;
-            response.headers()
-                        .add<Header::Server>("pistache/0.1")
-                        .add<Header::ContentType>(MIME(Text, Plain));
-
             response.send(Http::Code::Ok, "The color is " + valueSetting + ".");
         }
         else {
@@ -142,7 +134,7 @@ private:
         }
     }
 
-    // Defining the class of the SmartLight. It should model the entire configuration of the SmartLight
+    // The class of the SmartLight
     class SmartLight {
     public:
         explicit SmartLight() {
@@ -151,7 +143,6 @@ private:
             this->B = 000;
         }
 
-        // Setting the value for one of the settings. Hardcoded for the defrosting option
         bool setColor(int R, int G, int B) {
             this->R = R;
             this->G = G;
@@ -159,7 +150,6 @@ private:
             return true;
         }
 
-        // Getter
         string getColor() {
             return std::to_string(this->R) + ", " + std::to_string(this->G) + ", " + std::to_string(this->B);
         }
@@ -173,7 +163,7 @@ private:
     using Guard = std::lock_guard<Lock>;
     Lock smartLightLock;
 
-    // Instance of the SmartLight model
+    // Collection of Smart Lights
     SmartLight smartLights[10];
 
     // Defining the httpEndpoint and a router.
