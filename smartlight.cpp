@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <signal.h>
 
 #include <pistache/net.h>
 #include <pistache/http.h>
@@ -9,10 +12,11 @@
 #include <pistache/endpoint.h>
 #include <pistache/common.h>
 
-#include <signal.h>
+#include <nlohmann/json.hpp>
 
 using namespace std;
 using namespace Pistache;
+using json = nlohmann::json;
 
 // This is just a helper function to preety-print the Cookies that one of the enpoints shall receive.
 void printCookies(const Http::Request& req) {
@@ -71,18 +75,35 @@ private:
         Routes::Post(router, "/init/:id", Routes::bind(&SmartLightEndpoint::initSmartLight, this));
         Routes::Post(router, "/rgb/:id/:red/:green/:blue", Routes::bind(&SmartLightEndpoint::setRGB, this));
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
+        
+        Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::setSettingsJSON, this));
     }
 
     /** Setup a SmartLight
      * @param id The id of the SmartLight to be initiated
      **/
     void initSmartLight(const Rest::Request& request, Http::ResponseWriter response){
-        int id = std::stoi(request.param(":id").as<std::string>());
+        
+        try {
+            int id = std::stoi(request.param(":id").as<std::string>());
 
-        // Does nothing...
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                return;
+            }
+            
+            if (smartLights[id].IsInit()) { // prevent multiple init
+                response.send(Http::Code::Bad_Request, "This smart light was already init");
+                return;
+            }
+            // else not init
 
-        response.send(Http::Code::Ok, "The Smart Light setup has completed!");
-
+            smartLights[id].Init();
+            response.send(Http::Code::Ok, "The Smart Light setup has completed!\n");
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }
     }
 
     /** Change the color of a SmartLight
@@ -92,45 +113,149 @@ private:
      * @param blue Value between 0 and 255
      **/
     void setRGB(const Rest::Request& request, Http::ResponseWriter response){
-        int id = std::stoi(request.param(":id").as<std::string>());
-        int R = std::stoi(request.param(":red").as<std::string>());
-        int G = std::stoi(request.param(":green").as<std::string>());
-        int B = std::stoi(request.param(":blue").as<std::string>());
+        try {
+            int id = std::stoi(request.param(":id").as<std::string>());
+            int R = std::stoi(request.param(":red").as<std::string>());
+            int G = std::stoi(request.param(":green").as<std::string>());
+            int B = std::stoi(request.param(":blue").as<std::string>());
 
-        // This is a guard that prevents editing the same value by two concurent threads. 
-        Guard guard(smartLightLock);
+            // This is a guard that prevents editing the same value by two concurent threads. 
+            Guard guard(smartLightLock);
 
-        bool setResponse = false;
-        if (0 <= R && R <= 255 &&
-            0 <= G && G <= 255 &&
-            0 <= B && B <= 255)
-            setResponse = smartLights[id].setColor(R, G, B);
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                return;
+            }
+            
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init");
+                return;
+            }
 
-        if (setResponse) {
-            response.send(Http::Code::Ok, "The color of the Smart Light number " + std::to_string(id) + " was set to " +
-                                           std::to_string(R) + ", "+ std::to_string(G) + ", " + std::to_string(B) + ".");
+            bool setResponse = smartLights[id].setColor(R, G, B);
+
+            if (setResponse) {
+                response.send(Http::Code::Ok, "The color of the Smart Light number " + std::to_string(id) + " was set to " +
+                                            std::to_string(R) + ", "+ std::to_string(G) + ", " + std::to_string(B) + ".");
+            }
+            else {
+                response.send(Http::Code::Bad_Request, "Wrong values!\n");
+            }
         }
-        else {
-            response.send(Http::Code::Bad_Request, "Wrong values!");
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
         }
-
     }
 
     /** Get the color of a SmartLight
      * @param id The id of the SmartLight
      **/
     void getRGB(const Rest::Request& request, Http::ResponseWriter response){
-        int id = std::stoi(request.param(":id").as<std::string>());
+        try {
+            int id = std::stoi(request.param(":id").as<std::string>());
 
-        Guard guard(smartLightLock);
+            Guard guard(smartLightLock);
 
-        string valueSetting = smartLights[id].getColor();
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                return;
+            }
+            
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init");
+                return;
+            }
 
-        if (valueSetting != "") {
-            response.send(Http::Code::Ok, "The color is " + valueSetting + ".");
+            string valueSetting = smartLights[id].getColor();
+
+            if (valueSetting != "") {
+                response.send(Http::Code::Ok, "The color is " + valueSetting + ".\n");
+            }
+            else {
+                response.send(Http::Code::Not_Found, "The color was not found...\n");
+            }
         }
-        else {
-            response.send(Http::Code::Not_Found, "The color was not found...");
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }
+    }
+
+    void setSettingsJSON(const Rest::Request& request, Http::ResponseWriter response){
+
+        static const int nrSettings = 5;
+        string settings[nrSettings] = {"luminosity", "temperature", "R", "G", "B"};
+
+        try {
+            Guard guard(smartLightLock);
+
+            auto j = json::parse(request.body())["input_buffers"];
+
+            json jSettings = j["settings"];
+            int id = std::stoi((string) jSettings["id"]);
+            
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                return;
+            }
+            
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init");
+                return;
+            }
+
+            string rsp = "";
+
+            for (json::iterator iter = jSettings["buffer-tokens"].begin(); iter != jSettings["buffer-tokens"].end(); ++iter) {
+                bool isSetting = false;
+                json jCurr = iter.value();
+                string jName = jCurr["name"];
+
+                for (int i = 0; i < nrSettings; i++) {
+                    if (jName == settings[i]) {
+                        isSetting = true;
+                        break;
+                    }
+                }
+
+                if (!isSetting) {
+                    rsp += jName + " is not a setting\n";
+                }
+                else {
+                    bool validRsp = true;
+                    string jValue = jCurr["value"];
+                    
+                    // apply the setting
+
+                    if (validRsp)
+                        rsp += jName + " was set to " + jValue + "\n";
+                    else
+                        rsp += jName +  " was not found and or '" + jValue + "' was not a valid value\n";
+                }
+            }
+
+            // // read json output
+            // std::ifstream input_json("window_output.json");
+            // json content_json;
+            // input_json >> content_json;
+            // auto& output = content_json["output_buffers"];
+            // output[0]["value"] = actualized_state_dict["windows_open"];
+            // output[1]["value"] = actualized_state_dict["windows_semi_open"];
+            // output[2]["value"] = actualized_state_dict["windows_closed"];
+            // output[3]["value"] = actualized_state_dict["curtains_open"];
+            // output[4]["value"] = actualized_state_dict["alerted"];
+            // input_json.close();
+
+            // // write json output
+            // std::ofstream output_json ("window_output.json");
+            // output_json << std::setw(4) << content_json << std::endl;
+            // output_json.close();
+
+
+            // our_window.setActualizedStateDictWindow(actualized_state_dict);
+            response.send(Http::Code::Ok, rsp);
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
         }
     }
 
@@ -141,12 +266,64 @@ private:
             this->R = 222;
             this->G = 111;
             this->B = 000;
+            this->luminosity = 100;
+            this->temperature = 0;
         }
 
         bool setColor(int R, int G, int B) {
+            
+            if (0 <= R && R <= 255 &&
+                0 <= G && G <= 255 &&
+                0 <= B && B <= 255)
+            {
+                this->R = R;
+                this->G = G;
+                this->B = B;
+                return true;
+            }
+            else return false;
+        }
+
+        void Init() {
+            this->init = true;
+        }
+
+        bool IsInit() {
+            return this->init;
+        }
+
+        bool SetR (int R) {
+            if (0 > R || R > 255)
+                return false;
             this->R = R;
+            return true;
+        }
+
+        bool SetG (int G) {
+            if (0 > G || G > 255)
+                return false;
             this->G = G;
+            return true;
+        }
+
+        bool SetR (int B) {
+            if (0 > B || B > 255)
+                return false;
             this->B = B;
+            return true;
+        }
+
+        bool SetLuminosity (int luminosityB) {
+            if (0 > luminosity || luminosity > 100)
+                return false;
+            this->luminosity = luminosity;
+            return true;
+        }
+
+        bool SetTemperature (int temperature) {
+            if (0 > temperature || temperature > 100)
+                return false;
+            this->temperature = temperature;
             return true;
         }
 
@@ -155,7 +332,8 @@ private:
         }
 
     private:
-        int R, G, B;
+        bool init = false;
+        int R, G, B, luminosity, temperature;
     };
 
     // Create the lock which prevents concurrent editing of the same variable
@@ -163,8 +341,10 @@ private:
     using Guard = std::lock_guard<Lock>;
     Lock smartLightLock;
 
+    static const int MaxSmartLights = 10;
+
     // Collection of Smart Lights
-    SmartLight smartLights[10];
+    SmartLight smartLights[MaxSmartLights];
 
     // Defining the httpEndpoint and a router.
     std::shared_ptr<Http::Endpoint> httpEndpoint;
