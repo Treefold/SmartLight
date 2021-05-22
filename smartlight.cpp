@@ -271,20 +271,16 @@ private:
             this->B = 000;
             this->luminosity = 100;
             this->temperature = 0;
-        }
+        } 
 
-        bool setColor(int R, int G, int B) {
-            
-            if (0 <= R && R <= 255 &&
-                0 <= G && G <= 255 &&
-                0 <= B && B <= 255)
-            {
-                this->R = R;
-                this->G = G;
-                this->B = B;
-                return true;
-            }
-            else return false;
+        void DeepCopy(SmartLight& copy) {
+             copy.init        = this->init;
+             copy.powered     = this->powered;
+             copy.R           = this->R;
+             copy.G           = this->G;
+             copy.B           = this->B;
+             copy.luminosity  = this->luminosity;
+             copy.temperature = this->temperature;
         }
 
         void Init() {
@@ -340,8 +336,39 @@ private:
             return true;
         }
 
+        bool setColor(int R, int G, int B) {
+            
+            if (0 <= R && R <= 255 &&
+                0 <= G && G <= 255 &&
+                0 <= B && B <= 255)
+            {
+                this->R = R;
+                this->G = G;
+                this->B = B;
+                return true;
+            }
+            else return false;
+        }
+
         string getColor() {
             return std::to_string(this->R) + ", " + std::to_string(this->G) + ", " + std::to_string(this->B);
+        }
+
+        bool HasValidConfig() {
+            if (! this->init)
+                return false;
+            if (0 > R || R > 255)
+                return false;
+            if (0 > G || G > 255)
+                return false;
+            if (0 > B || B > 255)
+                return false;
+            if (0 > luminosity || luminosity > 100)
+                return false;
+            if (0 > temperature || temperature > 100)
+                return false;
+
+            return true;
         }
 
     private:
