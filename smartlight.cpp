@@ -1,3 +1,6 @@
+// build and run command (in cmd): 
+// g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && ./smartlight
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -306,7 +309,7 @@ private:
             return true;
         }
 
-        bool SetR (int B) {
+        bool SetB (int B) {
             if (0 > B || B > 255)
                 return false;
             this->B = B;
