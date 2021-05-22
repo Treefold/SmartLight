@@ -5,7 +5,7 @@
          "protocol":"HTTP",
          "method":"POST",
          "prefix":"localhost:9080/settings",
-         "id": "003s",
+         "id": "0",
          "buffer-tokens":[
             {
                "name":"impact",

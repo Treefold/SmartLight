@@ -91,12 +91,12 @@ private:
             int id = std::stoi(request.param(":id").as<std::string>());
 
             if (id < 0 || id >= MaxSmartLights) { // test Id
-                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
             
             if (smartLights[id].IsInit()) { // prevent multiple init
-                response.send(Http::Code::Bad_Request, "This smart light was already init");
+                response.send(Http::Code::Bad_Request, "This smart light was already init\n");
                 return;
             }
             // else not init
@@ -126,12 +126,12 @@ private:
             Guard guard(smartLightLock);
 
             if (id < 0 || id >= MaxSmartLights) { // test Id
-                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
             
             if (! smartLights[id].IsInit()) { // don't use if not init
-                response.send(Http::Code::Bad_Request, "This smart light was not init");
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
             }
 
@@ -160,12 +160,12 @@ private:
             Guard guard(smartLightLock);
 
             if (id < 0 || id >= MaxSmartLights) { // test Id
-                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
             
             if (! smartLights[id].IsInit()) { // don't use if not init
-                response.send(Http::Code::Bad_Request, "This smart light was not init");
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
             }
 
@@ -197,15 +197,18 @@ private:
             int id = std::stoi((string) jSettings["id"]);
             
             if (id < 0 || id >= MaxSmartLights) { // test Id
-                response.send(Http::Code::Bad_Request, "The Id is unavailable");
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
             
             if (! smartLights[id].IsInit()) { // don't use if not init
-                response.send(Http::Code::Bad_Request, "This smart light was not init");
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
             }
 
+            SmartLight sl_copy = SmartLight(smartLights[id]);
+            json jsonSettings;
+            sl_copy.Objectify(jsonSettings);
             string rsp = "";
 
             for (json::iterator iter = jSettings["buffer-tokens"].begin(); iter != jSettings["buffer-tokens"].end(); ++iter) {
@@ -227,7 +230,7 @@ private:
                     bool validRsp = true;
                     string jValue = jCurr["value"];
                     
-                    // apply the setting
+                    jsonSettings[jName] = jValue;
 
                     if (validRsp)
                         rsp += jName + " was set to " + jValue + "\n";
@@ -235,6 +238,10 @@ private:
                         rsp += jName +  " was not found and or '" + jValue + "' was not a valid value\n";
                 }
             }
+
+            cout << jsonSettings << endl;
+
+            // TODO: sl_copy.objectify(jsonSettings) + validate + update settings
 
             // // read json output
             // std::ifstream input_json("window_output.json");
@@ -264,6 +271,10 @@ private:
 
     // The class of the SmartLight
     class SmartLight {
+    private:
+        bool init = false, powered = false;
+        int R, G, B, luminosity, temperature;
+
     public:
         explicit SmartLight() {
             this->R = 222;
@@ -273,14 +284,25 @@ private:
             this->temperature = 0;
         } 
 
-        void DeepCopy(SmartLight& copy) {
-             copy.init        = this->init;
-             copy.powered     = this->powered;
-             copy.R           = this->R;
-             copy.G           = this->G;
-             copy.B           = this->B;
-             copy.luminosity  = this->luminosity;
-             copy.temperature = this->temperature;
+        SmartLight (const SmartLight &original) {
+            this->init        = original.init;
+            this->powered     = original.powered;
+            this->R           = original.R;
+            this->G           = original.G;
+            this->B           = original.B;
+            this->luminosity  = original.luminosity;
+            this->temperature = original.temperature;
+        }
+
+        void Objectify (json &j)
+        {
+            j["init"] = this->init;
+            j["powered"] = this->powered;
+            j["R"] = this->R;
+            j["G"] = this->G;
+            j["B"] = this->B;
+            j["luminosity"] = this->luminosity;
+            j["temperature"] = this->temperature;
         }
 
         void Init() {
@@ -301,42 +323,42 @@ private:
             return this->powered;
         }
 
-        bool SetR (int R) {
+        bool SetR (const int R) {
             if (0 > R || R > 255)
                 return false;
             this->R = R;
             return true;
         }
 
-        bool SetG (int G) {
+        bool SetG (const int G) {
             if (0 > G || G > 255)
                 return false;
             this->G = G;
             return true;
         }
 
-        bool SetB (int B) {
+        bool SetB (const int B) {
             if (0 > B || B > 255)
                 return false;
             this->B = B;
             return true;
         }
 
-        bool SetLuminosity (int luminosityB) {
+        bool SetLuminosity (const int luminosityB) {
             if (0 > luminosity || luminosity > 100)
                 return false;
             this->luminosity = luminosity;
             return true;
         }
 
-        bool SetTemperature (int temperature) {
+        bool SetTemperature (const int temperature) {
             if (0 > temperature || temperature > 100)
                 return false;
             this->temperature = temperature;
             return true;
         }
 
-        bool setColor(int R, int G, int B) {
+        bool setColor(const int R, const int G, const int B) {
             
             if (0 <= R && R <= 255 &&
                 0 <= G && G <= 255 &&
@@ -352,6 +374,35 @@ private:
 
         string getColor() {
             return std::to_string(this->R) + ", " + std::to_string(this->G) + ", " + std::to_string(this->B);
+        }
+
+        void SetByName (const string name, const int value) {
+            // no validation; (for copies and validated after)
+            if (name == "powered") {
+                this->powered = value;
+                return;
+            }   
+            if (name == "R") {
+                this->R = value;
+                return;
+            } 
+            if (name == "G") {
+                this->G = value;
+                return;
+            } 
+            if (name == "B") {
+                this->B = value;
+                return;
+            } 
+            if (name == "luminosity") {
+                this->luminosity = value;
+                return;
+            } 
+            if (name == "temperature") {
+                this->temperature = value;
+                return;
+            }   
+            
         }
 
         bool HasValidConfig() {
@@ -370,10 +421,6 @@ private:
 
             return true;
         }
-
-    private:
-        bool init = false, powered = false;
-        int R, G, B, luminosity, temperature;
     };
 
     // Create the lock which prevents concurrent editing of the same variable
