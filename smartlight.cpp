@@ -185,8 +185,8 @@ private:
 
     void setSettingsJSON(const Rest::Request& request, Http::ResponseWriter response){
 
-        static const int nrSettings = 5;
-        string settings[nrSettings] = {"luminosity", "temperature", "R", "G", "B"};
+        static const int nrSettings = 6;
+        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B"};
 
         try {
             Guard guard(smartLightLock);
@@ -295,6 +295,16 @@ private:
             return this->init;
         }
 
+        void SetPower(bool powered)
+        {
+            this->powered = powered;
+        }
+
+        bool IsPowered()
+        {
+            return this->powered;
+        }
+
         bool SetR (int R) {
             if (0 > R || R > 255)
                 return false;
@@ -335,7 +345,7 @@ private:
         }
 
     private:
-        bool init = false;
+        bool init = false, powered = false;
         int R, G, B, luminosity, temperature;
     };
 
