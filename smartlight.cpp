@@ -416,7 +416,7 @@ private:
                 this->sensorInfo[0] = j["s_luminosity"];
             if (j["s_temperature"] != null)
                 this->sensorInfo[1] = j["s_temperature"];
-            
+
         }
 
         string Repr (int indentation = 4) {
@@ -474,7 +474,7 @@ private:
         }
 
         void setLuminosityAuto(){
-            this->luminosity = 100 - this->sensorInfo[0];
+            this->luminosity = (100 - this->sensorInfo[0])%101;
         }
 
         void SetTemperatureAuto(){
@@ -504,7 +504,7 @@ private:
 
             else{
                 if(currentTime < converted7 || converted20 < currentTime){
-                    this->temperature = 100 - this->sensorInfo[1];
+                    this->temperature = (100 - this->sensorInfo[1])%101;
                 }
             }
         }
