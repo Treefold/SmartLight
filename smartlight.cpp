@@ -21,6 +21,8 @@ using namespace std;
 using namespace Pistache;
 using json = nlohmann::json;
 
+auto const null = nlohmann::detail::value_t::null;
+
 // This is just a helper function to preety-print the Cookies that one of the enpoints shall receive.
 void printCookies(const Http::Request& req) {
     auto cookies = req.cookies();
@@ -208,7 +210,7 @@ private:
 
             SmartLight sl_copy = SmartLight(smartLights[id]);
             json jsonSettings;
-            sl_copy.Objectify(jsonSettings);
+            sl_copy.ExportToJson(jsonSettings);
             string rsp = "";
 
             for (json::iterator iter = jSettings["buffer-tokens"].begin(); iter != jSettings["buffer-tokens"].end(); ++iter) {
@@ -229,9 +231,13 @@ private:
                 else {
                     bool validRsp = true;
                     string jValue = jCurr["value"];
+                    try {
+                        jsonSettings[jName] = std::stoi(jValue);
+                    } catch (...) {
+                        response.send(Http::Code::Bad_Request, "The value for '" + jName + "' is not a number\n");
+                        return;
+                    }
                     
-                    jsonSettings[jName] = jValue;
-
                     if (validRsp)
                         rsp += jName + " was set to " + jValue + "\n";
                     else
@@ -239,9 +245,8 @@ private:
                 }
             }
 
-            cout << jsonSettings << endl;
-
-            // TODO: sl_copy.objectify(jsonSettings) + validate + update settings
+            sl_copy.ImportFromJson(jsonSettings);
+            cout << sl_copy.Repr() << endl;
 
             // // read json output
             // std::ifstream input_json("window_output.json");
@@ -262,7 +267,14 @@ private:
 
 
             // our_window.setActualizedStateDictWindow(actualized_state_dict);
-            response.send(Http::Code::Ok, rsp);
+            if (sl_copy.HasValidConfig()) {
+                smartLights[id].UpdateFromSL(sl_copy)
+                // TODO Update values in file (save state)
+                response.send(Http::Code::Ok, rsp);
+            } else {
+                // invalid configuration -> the previous value remain unchanged
+                response.send(Http::Code::Bad_Request, "Invalid new setting configuration\n");                
+            }
         }
         catch (...) {
             response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
@@ -285,6 +297,10 @@ private:
         } 
 
         SmartLight (const SmartLight &original) {
+            this->UpdateFromSL(original);
+        }
+
+        void UpdateFromSL (const SmartLight &original) {
             this->init        = original.init;
             this->powered     = original.powered;
             this->R           = original.R;
@@ -294,8 +310,7 @@ private:
             this->temperature = original.temperature;
         }
 
-        void Objectify (json &j)
-        {
+        void ExportToJson (json &j) {
             j["init"] = this->init;
             j["powered"] = this->powered;
             j["R"] = this->R;
@@ -303,6 +318,29 @@ private:
             j["B"] = this->B;
             j["luminosity"] = this->luminosity;
             j["temperature"] = this->temperature;
+        }
+
+        void ImportFromJson (const json &j) {
+            if (j["init"] != null)
+                this->init = j["init"];
+            if (j["powered"] != null)
+                this->powered = j["powered"];
+            if (j["R"] != null)
+                this->R = j["R"];
+            if (j["G"] != null)
+                this->G = j["G"];
+            if (j["B"] != null)
+                this->B = j["B"];
+            if (j["luminosity"] != null)
+              this->luminosity = j["luminosity"];
+            if (j["temperature"] != null)
+                this->temperature = j["temperature"];
+        }
+
+        string Repr (int indentation = 4) {
+            json j;
+            this->ExportToJson(j);
+            return j.dump(indentation);
         }
 
         void Init() {
