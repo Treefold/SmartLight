@@ -66,10 +66,8 @@ public:
         mapSConfig = (char *) MAP_FAILED;
         try {
             const char* filepath = "SettingConfigs.data";
-            //cout << filepath << endl;
-            //cout << MaxSmartLights * sizeof(SmartLight) << endl;
+            // cout << MaxSmartLights * sizeof(SmartLight) << endl;
             
-
             fdSConfig = open(filepath, O_RDWR, (mode_t)0600);
 
             if (fdSConfig == -1)
