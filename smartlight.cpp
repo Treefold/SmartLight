@@ -5,7 +5,6 @@
 #include <iostream>
 #include <fstream>
 #include <signal.h>
-#include <vector>
 #include <ctime>
 
 #include <pistache/net.h>
