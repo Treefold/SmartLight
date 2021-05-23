@@ -83,7 +83,7 @@ private:
         Routes::Post(router, "/rgb/:id/:red/:green/:blue", Routes::bind(&SmartLightEndpoint::setRGB, this));
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
 
-        Routes::Post(router, "/mode/:mode", Routes::bind(&SmartLightEndpoint::setMode, this));
+        Routes::Post(router, "/mode/:id/:mode", Routes::bind(&SmartLightEndpoint::setMode, this));
 
         Routes::Get(router, "/settings/:id", Routes::bind(&SmartLightEndpoint::GetSettingsJSON, this));
         Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::SetSettingsJSON, this));
@@ -192,7 +192,8 @@ private:
 
     void setMode(const Rest::Request& request, Http::ResponseWriter response){
         try {
-            string mode = std::stoi(request.param(":mode").as<std::string>());
+            bool mode = std::stoi(request.param(":mode").as<std::string>());
+            int id = std::stoi(request.param(":id").as<std::string>());
 
             // This is a guard that prevents editing the same value by two concurent threads.
             Guard guard(smartLightLock);
@@ -210,7 +211,7 @@ private:
             bool setResponse = smartLights[id].setMode(mode);
 
             if (setResponse) {
-                response.send(Http::Code::Ok, "The mode of the Smart Light number " + std::to_string(id) + " was set to " + mode);
+                response.send(Http::Code::Ok, "The mode of the Smart Light number " + std::to_string(id) + " was set to " + std::to_string(mode) );
             }
             else {
                 response.send(Http::Code::Bad_Request, "Wrong values!\n");
@@ -248,7 +249,7 @@ private:
     void SetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
 
         static const int nrSettings = 8;
-        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "mode", "sensorInfo"};
+        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "manual", "sensorInfo"};
 
         try {
             Guard guard(smartLightLock);
@@ -346,8 +347,8 @@ private:
     private:
         bool init = false, powered = false;
         int R, G, B, luminosity, temperature;
-        std::string mode = "manual"; // or auto
-        std::vector<int> sensorInfo;
+        bool manual = true; // or auto
+        int sensorInfo[5];
 
     public:
         explicit SmartLight() {
@@ -356,10 +357,6 @@ private:
             this->B = 000;
             this->luminosity = 100;
             this->temperature = 0;
-            this->mode = "manual";
-            for (int i = 0; i < 5; += 1){
-                sensorInfo.push_back(0);
-            }
         }
 
         SmartLight (const SmartLight &original) {
@@ -374,8 +371,9 @@ private:
             this->B           = original.B;
             this->luminosity  = original.luminosity;
             this->temperature = original.temperature;
-            this->mode        = original.mode;
-            this->sensorInfo  = original.sensorInfo;
+            this->manual      = original.manual;
+            for (int i=0; i<=4; i++)
+                this->sensorInfo[i] = original.sensorInfo[i];
         }
 
         void ExportToJson (json &j) {
@@ -386,8 +384,7 @@ private:
             j["B"] = this->B;
             j["luminosity"] = this->luminosity;
             j["temperature"] = this->temperature;
-            j["mode"] = this->mode;
-            j["sensorInfo"] = this->sensorInfo;
+            j["manual"] = this->manual;
         }
 
         void ImportFromJson (const json &j) {
@@ -405,10 +402,8 @@ private:
               this->luminosity = j["luminosity"];
             if (j["temperature"] != null)
                 this->temperature = j["temperature"];
-            if (j["mode"] != null)
-                this->mode = j["mode"];
-            if (j["sensorInfo"] != null)
-                this->sensorInfo = j["sensorInfo"];
+            if (j["manual"] != null)
+                this->manual = j["manual"];
         }
 
         string Repr (int indentation = 4) {
@@ -456,16 +451,13 @@ private:
             return true;
         }
 
-        bool setMode(std::string newMode){
-            if (newMode.compare("auto") == 0 or newMode.compare("manual") == 0){
-                this->mode = newMode;
-                return true;
-            }
-            return false;
+        bool setMode(bool manual){
+            this->manual = manual;
+            return true;
         }
 
-        string getMode(){
-            return this->mode;
+        bool isManual(){
+            return this->manual;
         }
 
         bool SetLuminosity (const int luminosity) {
