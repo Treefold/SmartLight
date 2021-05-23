@@ -17,6 +17,16 @@
 
 #include <nlohmann/json.hpp>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 using namespace std;
 using namespace Pistache;
 using json = nlohmann::json;
@@ -43,12 +53,79 @@ namespace Generic {
 
 }
 
+int    fdSConfig  = -1;
+char * mapSConfig = (char *) MAP_FAILED;
+
 // Definition of the SmartLightEnpoint class 
 class SmartLightEndpoint {
 public:
     explicit SmartLightEndpoint(Address addr)
         : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
-    { }
+    {   
+        fdSConfig  = -1;
+        mapSConfig = (char *) MAP_FAILED;
+        try {
+            const char* filepath = "SettingConfigs.data";
+            //cout << filepath << endl;
+            //cout << MaxSmartLights * sizeof(SmartLight) << endl;
+            
+
+            fdSConfig = open(filepath, O_RDWR, (mode_t)0600);
+
+            if (fdSConfig == -1)
+                throw "Error opening the file";
+
+            struct stat fileInfo = {0};
+        
+            if (fstat(fdSConfig, &fileInfo) == -1)
+                throw "Error getting the file size";
+
+            if (fileInfo.st_size != MaxSmartLights * sizeof(SmartLight))
+                throw "Error missmatching between the file size and the to be mapped object size";
+
+            mapSConfig = (char *) mmap(0, fileInfo.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdSConfig, 0);
+
+            if (mapSConfig == MAP_FAILED) 
+                throw "Error Mapping Failed";
+            
+            /* - After each SmartLight Change
+            SmartLight sl[MaxSmartLights];
+            for (off_t i = 0; i < fileInfo.st_size; ++i) {
+                //printf("Found character '%c' value = %d at %ji\n", mapSConfig[i], (int) mapSConfig[i], (intmax_t)i);
+                mapSConfig[i] = ((char *) sl)[i];
+                //printf("Found character '%c' value = %d at %ji\n", mapSConfig[i], (int) mapSConfig[i], (intmax_t)i);
+            }
+            //cout << ((SmartLight*) mapSConfig)[0].Repr() << endl;
+            // */
+
+            smartLights = (SmartLight*) mapSConfig;
+        } catch (char const* str) {
+            cout << "Error in creating the Shared Memory Map:\n\t" << str << endl;
+            if (fdSConfig != -1)
+                close(fdSConfig);
+            fdSConfig = -1;
+            smartLights = new SmartLight[MaxSmartLights];
+        } catch (...) {
+            cout << "Error in creating the Shared Memory Map\n";
+            smartLights = new SmartLight[MaxSmartLights];
+        }
+    }
+
+    ~SmartLightEndpoint() {   
+        try {
+            if (fdSConfig != -1) {
+                if (mapSConfig != MAP_FAILED)
+                    munmap (mapSConfig, MaxSmartLights * sizeof(SmartLight));
+                close(fdSConfig);
+            } else {
+                delete[] smartLights;
+            }
+        } catch (...) {
+            cout << "Error in deleting the Shared Memory Map\n";
+        }
+        fdSConfig  = -1;
+        mapSConfig = (char *) MAP_FAILED;
+    }
 
     // Initialization of the server. Additional options can be provided here
     void init(size_t thr = 2) {
@@ -273,25 +350,6 @@ private:
             sl_copy.ImportFromJson(jsonSettings);
             cout << sl_copy.Repr() << endl;
 
-            // // read json output
-            // std::ifstream input_json("window_output.json");
-            // json content_json;
-            // input_json >> content_json;
-            // auto& output = content_json["output_buffers"];
-            // output[0]["value"] = actualized_state_dict["windows_open"];
-            // output[1]["value"] = actualized_state_dict["windows_semi_open"];
-            // output[2]["value"] = actualized_state_dict["windows_closed"];
-            // output[3]["value"] = actualized_state_dict["curtains_open"];
-            // output[4]["value"] = actualized_state_dict["alerted"];
-            // input_json.close();
-
-            // // write json output
-            // std::ofstream output_json ("window_output.json");
-            // output_json << std::setw(4) << content_json << std::endl;
-            // output_json.close();
-
-
-            // our_window.setActualizedStateDictWindow(actualized_state_dict);
             if (sl_copy.HasValidConfig()) {
                 smartLights[id].UpdateFromSL(sl_copy);
                 // TODO Update values in file (save state)
@@ -309,7 +367,7 @@ private:
     // The class of the SmartLight
     class SmartLight {
     private:
-        bool init = false, powered = false;
+        bool init = true, powered = false;
         int R, G, B, luminosity, temperature;
 
     public:
@@ -407,7 +465,7 @@ private:
             return true;
         }
 
-        bool SetLuminosity (const int luminosityB) {
+        bool SetLuminosity (const int luminosity) {
             if (0 > luminosity || luminosity > 100)
                 return false;
             this->luminosity = luminosity;
@@ -494,7 +552,7 @@ private:
     static const int MaxSmartLights = 10;
 
     // Collection of Smart Lights
-    SmartLight smartLights[MaxSmartLights];
+    SmartLight* smartLights;
 
     // Defining the httpEndpoint and a router.
     std::shared_ptr<Http::Endpoint> httpEndpoint;
