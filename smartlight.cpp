@@ -51,7 +51,7 @@ class SmartLightEndpoint {
 public:
     explicit SmartLightEndpoint(Address addr)
         : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
-    { }
+    {}
 
     // Initialization of the server. Additional options can be provided here
     void init(size_t thr = 2) {
@@ -348,8 +348,8 @@ private:
     private:
         bool init = false, powered = false;
         int R, G, B, luminosity, temperature;
-        bool manual = true; // or auto
-        int sensorInfo[5];
+        bool manual = false;
+        int sensorInfo[2]={10,20};
 
     public:
         explicit SmartLight() {
@@ -390,6 +390,8 @@ private:
             }
             j["luminosity"] = this->luminosity;
             j["temperature"] = this->temperature;
+            j["s_luminosity"] = this->sensorInfo[0];
+            j["s_temperature"] = this->sensorInfo[1];
 
         }
 
@@ -414,6 +416,7 @@ private:
                 this->sensorInfo[0] = j["s_luminosity"];
             if (j["s_temperature"] != null)
                 this->sensorInfo[1] = j["s_temperature"];
+            
         }
 
         string Repr (int indentation = 4) {
