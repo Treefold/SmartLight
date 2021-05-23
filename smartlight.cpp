@@ -1,5 +1,5 @@
 // build and run command (in cmd):
-// g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && ./smartlight
+// clear && g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && ./smartlight
 
 #include <algorithm>
 #include <iostream>
@@ -372,8 +372,8 @@ private:
 
     void SetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
 
-        static const int nrSettings = 8;
-        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "manual", "sensorInfo"};
+        static const int nrSettings = 7;
+        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "manual"};
 
         try {
             Guard guard(smartLightLock);
@@ -599,7 +599,7 @@ private:
             if (j["temperature"] != null)
                 this->temperature = j["temperature"];
             if (j["manual"] != null)
-                this->manual = j["manual"];
+                this->manual = j["manual"] != 0;
             if (j["s_luminosity"] != null)
                 this->sensorInfo[0] = j["s_luminosity"];
             if (j["s_temperature"] != null)

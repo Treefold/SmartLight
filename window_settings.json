@@ -17,6 +17,15 @@
                "optional":false
             },
             {
+               "name":"manual",
+               "description":"Set the values manually",
+               "value":"1",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            },
+            {
                "name":"air_quality",
                "description":"Sensor that gives air quality",
                "value":"67",
@@ -37,7 +46,7 @@
             {
                "name":"temperature",
                "description":"Sensor that gives temperature",
-               "value":"35",
+               "value":"79",
                "token_type":"string",
                "byte_size":256,
                "regex-rule":"[a-zA-Z]*",
