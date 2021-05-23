@@ -1,10 +1,11 @@
-// build and run command (in cmd): 
+// build and run command (in cmd):
 // g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && ./smartlight
 
 #include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <signal.h>
+#include <vector>
 
 #include <pistache/net.h>
 #include <pistache/http.h>
@@ -14,6 +15,7 @@
 #include <pistache/router.h>
 #include <pistache/endpoint.h>
 #include <pistache/common.h>
+
 
 #include <nlohmann/json.hpp>
 
@@ -43,7 +45,7 @@ namespace Generic {
 
 }
 
-// Definition of the SmartLightEnpoint class 
+// Definition of the SmartLightEnpoint class
 class SmartLightEndpoint {
 public:
     explicit SmartLightEndpoint(Address addr)
@@ -80,7 +82,9 @@ private:
         Routes::Post(router, "/init/:id", Routes::bind(&SmartLightEndpoint::initSmartLight, this));
         Routes::Post(router, "/rgb/:id/:red/:green/:blue", Routes::bind(&SmartLightEndpoint::setRGB, this));
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
-        
+
+        Routes::Post(router, "/mode/:mode", Routes::bind(&SmartLightEndpoint::setMode, this));
+
         Routes::Get(router, "/settings/:id", Routes::bind(&SmartLightEndpoint::GetSettingsJSON, this));
         Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::SetSettingsJSON, this));
     }
@@ -89,7 +93,7 @@ private:
      * @param id The id of the SmartLight to be initiated
      **/
     void initSmartLight(const Rest::Request& request, Http::ResponseWriter response){
-        
+
         try {
             int id = std::stoi(request.param(":id").as<std::string>());
 
@@ -97,7 +101,7 @@ private:
                 response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
-            
+
             if (smartLights[id].IsInit()) { // prevent multiple init
                 response.send(Http::Code::Bad_Request, "This smart light was already init\n");
                 return;
@@ -125,14 +129,14 @@ private:
             int G = std::stoi(request.param(":green").as<std::string>());
             int B = std::stoi(request.param(":blue").as<std::string>());
 
-            // This is a guard that prevents editing the same value by two concurent threads. 
+            // This is a guard that prevents editing the same value by two concurent threads.
             Guard guard(smartLightLock);
 
             if (id < 0 || id >= MaxSmartLights) { // test Id
                 response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
-            
+
             if (! smartLights[id].IsInit()) { // don't use if not init
                 response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
@@ -166,7 +170,7 @@ private:
                 response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
-            
+
             if (! smartLights[id].IsInit()) { // don't use if not init
                 response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
@@ -186,18 +190,18 @@ private:
         }
     }
 
-    
+
     void GetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
         try {
             Guard guard(smartLightLock);
 
             int id = std::stoi(request.param(":id").as<std::string>());
-            
+
             if (id < 0 || id >= MaxSmartLights) { // test Id
                 response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
-            
+
             if (! smartLights[id].IsInit()) { // don't use if not init
                 response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
@@ -212,8 +216,8 @@ private:
 
     void SetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
 
-        static const int nrSettings = 6;
-        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B"};
+        static const int nrSettings = 8;
+        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "mode", "sensorInfo"};
 
         try {
             Guard guard(smartLightLock);
@@ -222,12 +226,12 @@ private:
 
             json jSettings = j["settings"];
             int id = std::stoi((string) jSettings["id"]);
-            
+
             if (id < 0 || id >= MaxSmartLights) { // test Id
                 response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
-            
+
             if (! smartLights[id].IsInit()) { // don't use if not init
                 response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
@@ -262,7 +266,7 @@ private:
                         response.send(Http::Code::Bad_Request, "The value for '" + jName + "' is not a number\n");
                         return;
                     }
-                    
+
                     if (validRsp)
                         rsp += jName + " was set to " + jValue + "\n";
                     else
@@ -298,7 +302,7 @@ private:
                 response.send(Http::Code::Ok, rsp);
             } else {
                 // invalid configuration -> the previous value remain unchanged
-                response.send(Http::Code::Bad_Request, "Invalid new setting configuration\n");                
+                response.send(Http::Code::Bad_Request, "Invalid new setting configuration\n");
             }
         }
         catch (...) {
@@ -311,6 +315,8 @@ private:
     private:
         bool init = false, powered = false;
         int R, G, B, luminosity, temperature;
+        std::string mode = "manual"; // or auto
+        std::vector<int> sensorInfo;
 
     public:
         explicit SmartLight() {
@@ -319,7 +325,11 @@ private:
             this->B = 000;
             this->luminosity = 100;
             this->temperature = 0;
-        } 
+            this->mode = "manual";
+            for (int i = 0; i < 5; += 1){
+                sensorInfo.push_back(0);
+            }
+        }
 
         SmartLight (const SmartLight &original) {
             this->UpdateFromSL(original);
@@ -333,6 +343,8 @@ private:
             this->B           = original.B;
             this->luminosity  = original.luminosity;
             this->temperature = original.temperature;
+            this->mode        = original.mode;
+            this->sensorInfo  = original.sensorInfo;
         }
 
         void ExportToJson (json &j) {
@@ -343,6 +355,8 @@ private:
             j["B"] = this->B;
             j["luminosity"] = this->luminosity;
             j["temperature"] = this->temperature;
+            j["mode"] = this->mode;
+            j["sensorInfo"] = this->sensorInfo;
         }
 
         void ImportFromJson (const json &j) {
@@ -360,6 +374,10 @@ private:
               this->luminosity = j["luminosity"];
             if (j["temperature"] != null)
                 this->temperature = j["temperature"];
+            if (j["mode"] != null)
+                this->mode = j["mode"];
+            if (j["sensorInfo"] != null)
+                this->sensorInfo = j["sensorInfo"];
         }
 
         string Repr (int indentation = 4) {
@@ -407,7 +425,17 @@ private:
             return true;
         }
 
-        bool SetLuminosity (const int luminosityB) {
+        void setMode(std::string newMode){
+            if (newMode.compare("auto") == 0 or newMode.compare("manual") == 0){
+                this->mode = newMode;
+            }
+        }
+
+        string getMode(){
+            return this->mode;
+        }
+
+        bool SetLuminosity (const int luminosity) {
             if (0 > luminosity || luminosity > 100)
                 return false;
             this->luminosity = luminosity;
@@ -422,7 +450,7 @@ private:
         }
 
         bool setColor(const int R, const int G, const int B) {
-            
+
             if (0 <= R && R <= 255 &&
                 0 <= G && G <= 255 &&
                 0 <= B && B <= 255)
@@ -444,28 +472,28 @@ private:
             if (name == "powered") {
                 this->powered = value;
                 return;
-            }   
+            }
             if (name == "R") {
                 this->R = value;
                 return;
-            } 
+            }
             if (name == "G") {
                 this->G = value;
                 return;
-            } 
+            }
             if (name == "B") {
                 this->B = value;
                 return;
-            } 
+            }
             if (name == "luminosity") {
                 this->luminosity = value;
                 return;
-            } 
+            }
             if (name == "temperature") {
                 this->temperature = value;
                 return;
-            }   
-            
+            }
+
         }
 
         bool HasValidConfig() {
