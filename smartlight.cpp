@@ -6,6 +6,7 @@
 #include <fstream>
 #include <signal.h>
 #include <vector>
+#include <ctime>
 
 #include <pistache/net.h>
 #include <pistache/http.h>
@@ -372,7 +373,7 @@ private:
             this->luminosity  = original.luminosity;
             this->temperature = original.temperature;
             this->manual      = original.manual;
-            for (int i=0; i<=4; i++)
+            for (int i=0; i<=1; i++)
                 this->sensorInfo[i] = original.sensorInfo[i];
         }
 
@@ -404,6 +405,10 @@ private:
                 this->temperature = j["temperature"];
             if (j["manual"] != null)
                 this->manual = j["manual"];
+            if (j["s_luminosity"] != null)
+                this->sensorInfo[0] = j["s_luminosity"];
+            if (j["s_temperature"] != null)
+                this->sensorInfo[1] = j["s_temperature"];
         }
 
         string Repr (int indentation = 4) {
@@ -458,6 +463,42 @@ private:
 
         bool isManual(){
             return this->manual;
+        }
+
+        void setLuminosityAuto(){
+            this->luminosity = 100 - this->sensorInfo[0];
+        }
+
+        void SetTemperatureAuto(){
+
+            std::time_t currentTime = std::time(nullptr);
+
+            struct tm when7 = {0};
+            when7.tm_hour = 7;
+            when7.tm_min = 0;
+            when7.tm_sec = 0;
+
+            time_t converted7;
+            converted7 = mktime(&when7);
+
+            struct tm when20 = {0};
+            when20.tm_hour = 20;
+            when20.tm_min = 0;
+            when20.tm_sec = 0;
+
+            time_t converted20;
+            converted20 = mktime(&when20);
+
+
+            if (converted7 < currentTime && currentTime < converted20){
+                this->temperature = 50;
+            }
+
+            else{
+                if(currentTime < converted7 || converted20 < currentTime){
+                    this->temperature = 100 - this->sensorInfo[1];
+                }
+            }
         }
 
         bool SetLuminosity (const int luminosity) {
