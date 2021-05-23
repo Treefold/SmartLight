@@ -190,6 +190,37 @@ private:
         }
     }
 
+    void setMode(const Rest::Request& request, Http::ResponseWriter response){
+        try {
+            string mode = std::stoi(request.param(":mode").as<std::string>());
+
+            // This is a guard that prevents editing the same value by two concurent threads.
+            Guard guard(smartLightLock);
+
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
+                return;
+            }
+
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
+                return;
+            }
+
+            bool setResponse = smartLights[id].setMode(mode);
+
+            if (setResponse) {
+                response.send(Http::Code::Ok, "The mode of the Smart Light number " + std::to_string(id) + " was set to " + mode);
+            }
+            else {
+                response.send(Http::Code::Bad_Request, "Wrong values!\n");
+            }
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }
+    }
+
 
     void GetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
         try {
@@ -425,10 +456,12 @@ private:
             return true;
         }
 
-        void setMode(std::string newMode){
+        bool setMode(std::string newMode){
             if (newMode.compare("auto") == 0 or newMode.compare("manual") == 0){
                 this->mode = newMode;
+                return true;
             }
+            return false;
         }
 
         string getMode(){
