@@ -157,6 +157,8 @@ private:
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
         Routes::Post(router, "/alarm/:id/:hour/:minute", Routes::bind(&SmartLightEndpoint::AddAlarm, this));
         Routes::Delete(router, "/alarm/:id/:hour/:minute", Routes::bind(&SmartLightEndpoint::RemoveAlarm, this));
+ 
+        Routes::Post(router, "/play/:id/:playnow", Routes::bind(&SmartLightEndpoint::PlaySong, this));
         
         Routes::Get(router, "/settings/:id", Routes::bind(&SmartLightEndpoint::GetSettingsJSON, this));
         Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::SetSettingsJSON, this));
@@ -263,6 +265,49 @@ private:
         }
     }
 
+    /** Play a song right now or add it to queue
+     *  @param id The id of the SmartLight
+     *  @param playnow Wheter or not to play the song right now
+     *  @body request The song
+     *  Example of HTTP call:
+     *  curl -X POST -d @short_sample.mp3 http://localhost:9080/play/1/0
+     **/
+    void PlaySong(const Rest::Request& request, Http::ResponseWriter response){
+        
+        try {
+            int id = std::stoi(request.param(":id").as<std::string>());
+
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
+                return;
+            }
+
+            int playnow = std::stoi(request.param(":playnow").as<std::string>());
+            auto file_content = request.body();
+
+            if (playnow < 0 || playnow > 1) {
+                response.send(Http::Code::Bad_Request, "Wrong option for playnow\n");
+                return;
+            }
+
+            std::ofstream file;
+            string file_name = "playing_" + std::to_string(id) + ".mp3";
+            if (playnow == 1) {
+                file.open(file_name, std::ofstream::out);
+                file<<file_content;
+                file.close();
+                response.send(Http::Code::Ok, "Playing the song right now.");
+            } else {
+                file.open(file_name, std::ofstream::app);
+                file<<file_content;
+                file.close();
+                response.send(Http::Code::Ok, "Song added to queue.");
+            }
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }
+    }
     
 
     void GetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
