@@ -80,6 +80,8 @@ private:
         Routes::Post(router, "/init/:id", Routes::bind(&SmartLightEndpoint::initSmartLight, this));
         Routes::Post(router, "/rgb/:id/:red/:green/:blue", Routes::bind(&SmartLightEndpoint::setRGB, this));
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
+        Routes::Post(router, "/alarm/:id/:hour/:minute", Routes::bind(&SmartLightEndpoint::AddAlarm, this));
+        Routes::Delete(router, "/alarm/:id/:hour/:minute", Routes::bind(&SmartLightEndpoint::RemoveAlarm, this));
         
         Routes::Get(router, "/settings/:id", Routes::bind(&SmartLightEndpoint::GetSettingsJSON, this));
         Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::SetSettingsJSON, this));
@@ -187,6 +189,7 @@ private:
     }
 
     
+
     void GetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
         try {
             Guard guard(smartLightLock);
@@ -269,7 +272,7 @@ private:
                         rsp += jName +  " was not found and or '" + jValue + "' was not a valid value\n";
                 }
             }
-
+    
             sl_copy.ImportFromJson(jsonSettings);
             cout << sl_copy.Repr() << endl;
 
@@ -306,11 +309,90 @@ private:
         }
     }
 
+    void AddAlarm(const Rest::Request& request, Http::ResponseWriter response){
+
+        try {
+            int id = std::stoi(request.param(":id").as<std::string>());
+            int hours = std::stoi(request.param(":hours").as<std::string>());
+            int minutes = std::stoi(request.param(":minutes").as<std::string>());
+
+            // This is a guard that prevents editing the same value by two concurent threads. 
+            Guard guard(smartLightLock);
+
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
+                return;
+            }
+            
+            if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) { // test time
+                response.send(Http::Code::Bad_Request, "The Time is not valid\n");
+                return;
+            }
+
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
+                return;
+            }
+
+            if(!smartLights[id].AddHour(hours,minutes))
+                response.send(Http::Code::Bad_Request, "You have reached the maximum number of alarms, please remove some unused alarms\n");
+            else
+                response.send(Http::Code::Ok, "The alarm was succesfully set\n");
+    
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }    
+
+    }
+
+    void RemoveAlarm(const Rest::Request& request, Http::ResponseWriter response){
+
+        try {
+            int id = std::stoi(request.param(":id").as<std::string>());
+            int hours = std::stoi(request.param(":hours").as<std::string>());
+            int minutes = std::stoi(request.param(":minutes").as<std::string>());
+
+            // This is a guard that prevents editing the same value by two concurent threads. 
+            Guard guard(smartLightLock);
+
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
+                return;
+            }
+            
+            if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) { // test time
+                response.send(Http::Code::Bad_Request, "The Time is not valid\n");
+                return;
+            }
+
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
+                return;
+            }
+
+            if(!smartLights[id].RemoveHour(hours,minutes))
+                response.send(Http::Code::Bad_Request, "The alarm that you want to remove was not found\n");
+            else
+                response.send(Http::Code::Ok, "The alarm was succesfully removed\n");
+    
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }
+        
+
+
+    }
+
+
+
     // The class of the SmartLight
     class SmartLight {
     private:
         bool init = false, powered = false;
         int R, G, B, luminosity, temperature;
+        int hours[10],minutes[10];
 
     public:
         explicit SmartLight() {
@@ -319,6 +401,11 @@ private:
             this->B = 000;
             this->luminosity = 100;
             this->temperature = 0;
+            for (int i=0;i<=9;i++){
+                this->hours[i]=0;
+                this->minutes[i]=0;
+            }
+                
         } 
 
         SmartLight (const SmartLight &original) {
@@ -434,6 +521,51 @@ private:
             }
             else return false;
         }
+
+        bool AddHour(int hour, int minute){
+            
+            if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60)  // test time
+                return false;
+            bool exists = false;
+            int poz = -1; 
+            for (int i=0;i<=9;i++){
+                if(this->hours[i] == -1 && this->minutes[i] == -1 && poz != -1)
+                    poz = i;
+                else if(this->hours[i] == hour && this->minutes[i] == minute)
+                    exists = true;
+            }
+
+            if(poz==-1)
+                return false;
+            if(!exists){
+                this->hours[poz] = hour;
+                this->minutes[poz] = minute;
+            }
+            return true;
+            
+        }
+
+        bool RemoveHour(int hour, int minute){
+            
+            if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60)  // test time
+                return false;
+
+            int poz = -1; 
+            for (int i=0;i<=9;i++){
+                if(this->hours[i] == hour && this->minutes[i] == minute)
+                    poz = i;
+            }
+
+            if(poz==-1)
+                return false;
+            else{
+                this->hours[poz] = -1;
+                this->minutes[poz] = -1;
+                return true;
+            }
+             
+        }
+
 
         string getColor() {
             return std::to_string(this->R) + ", " + std::to_string(this->G) + ", " + std::to_string(this->B);
