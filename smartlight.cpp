@@ -383,9 +383,14 @@ private:
             j["R"] = this->R;
             j["G"] = this->G;
             j["B"] = this->B;
+            j["manual"] = this->manual;
+            if(!this->manual){
+                this->setLuminosityAuto();
+                this->SetTemperatureAuto();
+            }
             j["luminosity"] = this->luminosity;
             j["temperature"] = this->temperature;
-            j["manual"] = this->manual;
+
         }
 
         void ImportFromJson (const json &j) {
