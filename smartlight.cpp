@@ -81,7 +81,8 @@ private:
         Routes::Post(router, "/rgb/:id/:red/:green/:blue", Routes::bind(&SmartLightEndpoint::setRGB, this));
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
         
-        Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::setSettingsJSON, this));
+        Routes::Get(router, "/settings/:id", Routes::bind(&SmartLightEndpoint::GetSettingsJSON, this));
+        Routes::Post(router, "/settings", Routes::bind(&SmartLightEndpoint::SetSettingsJSON, this));
     }
 
     /** Setup a SmartLight
@@ -185,7 +186,31 @@ private:
         }
     }
 
-    void setSettingsJSON(const Rest::Request& request, Http::ResponseWriter response){
+    
+    void GetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
+        try {
+            Guard guard(smartLightLock);
+
+            int id = std::stoi(request.param(":id").as<std::string>());
+            
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
+                return;
+            }
+            
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
+                return;
+            }
+
+            response.send(Http::Code::Ok, smartLights[id].Repr() + "\n");
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }
+    }
+
+    void SetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
 
         static const int nrSettings = 6;
         string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B"};
@@ -268,7 +293,7 @@ private:
 
             // our_window.setActualizedStateDictWindow(actualized_state_dict);
             if (sl_copy.HasValidConfig()) {
-                smartLights[id].UpdateFromSL(sl_copy)
+                smartLights[id].UpdateFromSL(sl_copy);
                 // TODO Update values in file (save state)
                 response.send(Http::Code::Ok, rsp);
             } else {
