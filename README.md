@@ -32,8 +32,12 @@ First, clone this repository
 
 Then install `pistache`:
 
-	sudo add-apt-repository ppa:pistache+team/unstable \
+	sudo add-apt-repository ppa:pistache+team/unstable
+	
+And:
+
 	sudo apt update \
+	
 	sudo apt install libpistache-dev
 
 Then install `nlohmann-json3-dev`:
