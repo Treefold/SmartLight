@@ -57,6 +57,6 @@ Go in the `Smartlight` folder:
 	
 Compile and run the project:
 
-	g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 \
+	g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && \
 	./smartlight 
 
