@@ -2,12 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../WindWow"
-		},
-		{
-			"path": "../example-iot-device"
 		}
 	],
 	"settings": {
