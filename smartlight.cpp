@@ -72,8 +72,9 @@ namespace Generic {
     void printDebug(const string& message) {
     	std::cout << "[debug] " << message << std::endl;
     }
-
 }
+
+using namespace Generic;
 
 int    alertCounter = 0;
 int    fdSConfig    = -1;
@@ -122,7 +123,7 @@ public:
 
             smartLights = (SmartLight*) mapSConfig;
         } catch (char const* str) {
-            printError("Error in creating the Shared Memory Map:\n\t" + str);
+            printError((string)"Error in creating the Shared Memory Map:\n\t" + str);
             if (fdSConfig != -1)
                 close(fdSConfig);
             fdSConfig = -1;

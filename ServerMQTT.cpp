@@ -47,16 +47,16 @@ void onMessage(struct mosquitto *mosq, void *obj, const struct mosquitto_message
     }
 
     if (value != 0) {
-        printInfo("New message with topic " + msg->topic + ": " + to_string(value));
+        printInfo((string)"New message with topic " + msg->topic + ": " + to_string(value));
         alertCounter ++;
         if (value >= 50 || alertCounter >= 3) {
-            printError("Stop tempering with the installation NOW! Shut down the installation first!");
+            printWarn("Stop tempering with the installation NOW! Shut down the installation first!");
             alertCounter = 0;
         } else {
             printWarn("Danger!!");
         }
     } else {
-        printInfo("New message with topic " + msg->topic + ": " + s);
+        printInfo((string)"New message with topic " + msg->topic + ": " + s);
     }   
 }
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     Address addr(Ipv4::any(), port);
 
     printInfo("Cores = " + to_string(hardware_concurrency()));
-    printInfo("Using " + thr + " threads");
+    printInfo("Using " + to_string(thr) + " threads");
 
     // Instance of the class that defines what the server can do.
     SmartLightEndpoint stats(addr);
