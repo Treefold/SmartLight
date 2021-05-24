@@ -9,7 +9,7 @@
          "buffer-tokens":[
             {
                "name":"impact",
-               "description":"Sensor that lets the user know wether someone tries to break the window or not",
+               "description":"Sensor that lets the user know whether someone tries to temper with the sistem while powered up",
                "value":"100",
                "token_type":"string",
                "byte_size":256,
