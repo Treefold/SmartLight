@@ -414,6 +414,7 @@ private:
                 }
 
                 if (!isSetting) {
+                    // TODO @Oepeling
                     rsp += jName + " is not a setting\n";
                 }
                 else {
@@ -444,11 +445,6 @@ private:
                 // invalid configuration -> the previous value remain unchanged
                 response.send(Http::Code::Bad_Request, "Invalid new setting configuration\n");
             }
-            
-            // TODO
-            string str = "mosquitto_pub -t test/t1 -m \"SOMEONE IS TRYING TO TEMPER WITH THE INSTALLATION WHILE POWERED UP!\" ";
-            const char *command = str.c_str();
-            system(command);
         }
         catch (...) {
             response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");

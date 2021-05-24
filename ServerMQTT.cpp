@@ -29,7 +29,7 @@ using namespace Pistache;
 void onConnect(struct mosquitto *mosq, void *obj, int rc) {
 	std :: cout << "ID: " << *(int *) obj << "\n";
 	if (rc) {
-		std :: cout << "Error with result code: " << rc << "\n";
+		std :: cout << "[error] Error with result code: " << rc << "\n";
 		exit(-1);
 	}
 	mosquitto_subscribe(mosq, NULL, "test/t1", 0);
@@ -46,16 +46,16 @@ void onMessage(struct mosquitto *mosq, void *obj, const struct mosquitto_message
     }
 
     if (value != 0) {
-        std :: cout << "New message with topic " << msg->topic << ": " << value << "\n";
+        std :: cout << "[info] New message with topic " << msg->topic << ": " << value << "\n";
         alertCounter ++;
         if (value >= 50 || alertCounter >= 3) {
-            std :: cout << "Stop tempering with the installation NOW! Shut down the installation first!\n";
+            std :: cout << "[error] Stop tempering with the installation NOW! Shut down the installation first!\n";
             alertCounter = 0;
         } else {
-            std :: cout << "Danger!!\n";
+            std :: cout << "[error] Danger!!\n";
         }
     } else {
-        std :: cout << "New message with topic " << msg->topic << ": " << s << "\n";
+        std :: cout << "[info] New message with topic " << msg->topic << ": " << s << "\n";
     }   
 }
 
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
 
     rc = mosquitto_connect(mosq, "localhost", 1883, 10);
     if(rc) {
-        std :: cout << "Could not connect to Broker with return code " << rc << "\n";
+        std :: cout << "[warn] Could not connect to Broker with return code " << rc << "\n";
         return -1;
     }
 
@@ -128,11 +128,11 @@ int main(int argc, char *argv[]) {
     int status = sigwait(&signals, &signal);
     if (status == 0)
     {
-        std :: cout << "received signal " << signal << std::endl;
+        std :: cout << "[info] received signal " << signal << std::endl;
     }
     else
     {
-        std :: cerr << "sigwait returns " << status << std::endl;
+        std :: cerr << "[info] sigwait returns " << status << std::endl;
     }
 
   stats.stop();
