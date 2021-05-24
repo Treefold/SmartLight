@@ -1,4 +1,4 @@
 # SmartLight
 
 Proiect IP
-Cel mai smecher
+Work in progress
