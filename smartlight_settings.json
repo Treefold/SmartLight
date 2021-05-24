@@ -17,12 +17,39 @@
                "optional":false
             },
             {
-               "name":"manual",
-               "description":"Set the values manually",
-               "value":"1",
+               "name":"R",
+               "description":"Red light intensity",
+               "value":"0",
                "token_type":"string",
                "byte_size":256,
-               "regex-rule":"[a-zA-Z]*",
+               "regex-rule":"([2][0-4][0-9])|([2][5][0-5])|([1]{0,1}[0-9]{1,2})",
+               "optional":false
+            },
+            {
+               "name":"G",
+               "description":"Green light intensity",
+               "value":"0",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"([2][0-4][0-9])|([2][5][0-5])|([1]{0,1}[0-9]{1,2})",
+               "optional":false
+            },
+            {
+               "name":"B",
+               "description":"Blue light intensity",
+               "value":"0",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"([2][0-4][0-9])|([2][5][0-5])|([1]{0,1}[0-9]{1,2})",
+               "optional":false
+            },
+            {
+               "name":"manual",
+               "description":"Set the values manually",
+               "value":"0",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"0|1",
                "optional":false
             },
             {
@@ -31,7 +58,7 @@
                "value":"35",
                "token_type":"string",
                "byte_size":256,
-               "regex-rule":"[a-zA-Z]*",
+               "regex-rule":"([1]{0,1}[0-9]{1,2})*",
                "optional":false
             },
             {
@@ -40,25 +67,25 @@
                "value":"10",
                "token_type":"string",
                "byte_size":256,
-               "regex-rule":"[a-zA-Z]*",
+               "regex-rule":"([1]{0,1}[0-9]{1,2})",
                "optional":false
             },
             {
                "name":"s_temperature",
                "description":"Sensor that gives temperature",
-               "value":"40",
+               "value":"10",
                "token_type":"string",
                "byte_size":256,
-               "regex-rule":"[a-zA-Z]*",
+               "regex-rule":"([1]{0,1}[0-9]{1,2})",
                "optional":false
             },
             {
                "name":"s_luminosity",
                "description":"Sensor that gives luminosity",
-               "value":"30",
+               "value":"90",
                "token_type":"string",
                "byte_size":256,
-               "regex-rule":"[a-zA-Z]*",
+               "regex-rule":"([1]{0,1}[0-9]{1,2})",
                "optional":false
             }
          ]

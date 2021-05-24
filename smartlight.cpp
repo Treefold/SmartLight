@@ -1,5 +1,5 @@
 // build and run command (in cmd):
-// clear && g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && ./smartlight
+// clear && g++ ServerMQTT.cpp -o server -lpistache -lcrypto -lssl -lpthread -std=c++17 -lmosquitto && ./server 
 
 #include <algorithm>
 #include <iostream>
@@ -96,7 +96,7 @@ public:
         mapSConfig = (char *) MAP_FAILED;
         try {
             const char* filepath = "SettingConfigs.data";
-            printDebug(to_string(MaxSmartLights * sizeof(SmartLight)));
+            //printDebug(to_string(MaxSmartLights * sizeof(SmartLight)));
             
             fdSConfig = open(filepath, O_RDWR, (mode_t)0600);
 
@@ -402,8 +402,8 @@ private:
 
     void SetSettingsJSON(const Rest::Request& request, Http::ResponseWriter response) {
 
-        static const int nrSettings = 7;
-        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "manual"};
+        static const int nrSettings = 9;
+        string settings[nrSettings] = {"powered", "luminosity", "temperature", "R", "G", "B", "manual", "s_temperature", "s_luminosity"};
 
         try {
             Guard guard(smartLightLock);
@@ -462,7 +462,7 @@ private:
             }
     
             sl_copy.ImportFromJson(jsonSettings);
-            printInfo(sl_copy.Repr());
+            //printInfo(sl_copy.Repr());
 
             if (sl_copy.HasValidConfig()) {
                 smartLights[id].UpdateFromSL(sl_copy);

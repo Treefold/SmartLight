@@ -19,7 +19,7 @@
             {
                "name":"manual",
                "description":"Set the values manually",
-               "value":"1",
+               "value":"0",
                "token_type":"string",
                "byte_size":256,
                "regex-rule":"[a-zA-Z]*",
@@ -55,7 +55,7 @@
             {
                "name":"luminosity",
                "description":"Sensor that gives luminosity",
-               "value":"10",
+               "value":"80",
                "token_type":"string",
                "byte_size":256,
                "regex-rule":"[a-zA-Z]*",
