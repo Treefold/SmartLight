@@ -16,7 +16,7 @@ See more on how to install them in [**Installing the dependencies**](https://git
 - pistache
 - mosquitto
 - nlohmann-json3-dev
-- gcc (for c++14 or later)
+- gcc (for c++17 or later)
 
 ## Instructions
 
@@ -91,8 +91,11 @@ Compile and run the project:
 Open another console tab and run one of the following:
 	
 	curl -X POST http://localhost:9080/init/0
+	
 	curl -X GET  http://localhost:9080/settings/0
+	
 	curl -X POST -H "Content-Type: application/json" -d @window_settings.json http://localhost:9080/settings
+	
 	mosquitto_pub -t test/t1 -m "impact: 10"
 
 To give your custom settings run the following command:
