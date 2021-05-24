@@ -18,7 +18,7 @@ See more on how to install them in [**Installing the dependencies**](https://git
 - nlohmann-json3-dev
 - gcc (for c++17 or later)
 
-## Instructions
+## Setup Instructions
 
 ### Downloads (skip on Linux)
 
@@ -85,8 +85,15 @@ Compile and run the project:
 
 	g++ ServerMQTT.cpp -o server -lpistache -lcrypto -lssl -lpthread -std=c++17 -lmosquitto \
 	&& ./server
-	
-### Interact with the server
+
+### Shut down
+
+Press `Ctrl-C` and then `Enter`.
+
+
+## Interaction
+
+### Samples
 
 Open another console tab and run one of the following:
 	
@@ -98,11 +105,36 @@ Open another console tab and run one of the following:
 	
 	mosquitto_pub -t test/t1 -m "impact: 10"
 
-To give your custom settings run the following command:
+### Light
+
+To give your custom light settings run the following command:
 	
 	curl -X POST -H "Content-Type: application/json" -d @user_settings_sample.json http://localhost:9080/settings
 	
-you can replace `user_settings_sample.json` with any `.json` with the desired settings. 
+you can replace `user_settings_sample.json` with any `.json` with the desired settings.
+
+If `manual` is set to `false` (meaning the light is set to automatic), the server receives data from the sensors and automatically sets the values for luminosity and temperature.
+
+### Music
+
+To play short_sample.mp3 right now on the device number 1 run:
+
+	curl -X POST -d @short_sample.mp3 http://localhost:9080/play/1/0
+
+To add short_sample.mp3 to the queue on the device number 3 run:
+
+	curl -X POST -d @short_sample.mp3 http://localhost:9080/play/3/0
+
+### Alarm
+To use the alarm API use:
+	
+	curl -X POST http://localhost:9080/alarm/1/10/30
+	
+	curl -X GET http://localhost:9080/alarm/1
+	
+	curl -X DELETE http://localhost:9080/alarm/1/10/30
+
+### Alerts
 
 To trigger temper alerts run:
 	
@@ -113,7 +145,3 @@ To trigger temper alerts run:
 or
 
 	mosquitto_pub -t test/t1 -m "impact: 70"
-
-### Shut down
-
-Press `Ctrl-C` and then `Enter`.
