@@ -30,11 +30,11 @@ First, clone this repository
 	
 	git clone https://github.com/Treefold/SmartLight.git
 
-Then install `pistache`:
+Then get the `pistache` repository:
 
 	sudo add-apt-repository ppa:pistache+team/unstable
 	
-And:
+And install it:
 
 	sudo apt update \
 	
