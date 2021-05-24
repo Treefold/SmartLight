@@ -38,12 +38,12 @@ auto const null = nlohmann::detail::value_t::null;
 // This is just a helper function to preety-print the Cookies that one of the enpoints shall receive.
 void printCookies(const Http::Request& req) {
     auto cookies = req.cookies();
-    std::cout << "Cookies: [" << std::endl;
+    std :: cout << "Cookies: [" << std::endl;
     const std::string indent(4, ' ');
     for (const auto& c: cookies) {
-        std::cout << indent << c.name << " = " << c.value << std::endl;
+        std :: cout << indent << c.name << " = " << c.value << std::endl;
     }
-    std::cout << "]" << std::endl;
+    std :: cout << "]" << std::endl;
 }
 
 // Some generic namespace, with a simple function we could use to test the creation of the endpoints.
@@ -55,8 +55,9 @@ namespace Generic {
 
 }
 
-int    fdSConfig  = -1;
-char * mapSConfig = (char *) MAP_FAILED;
+int    alertCounter = 0;
+int    fdSConfig    = -1;
+char * mapSConfig   = (char *) MAP_FAILED;
 
 // Definition of the SmartLightEnpoint class 
 class SmartLightEndpoint {
@@ -64,6 +65,7 @@ public:
     explicit SmartLightEndpoint(Address addr)
         : httpEndpoint(std::make_shared<Http::Endpoint>(addr))
     {   
+        alertCounter = 0;
         fdSConfig  = -1;
         mapSConfig = (char *) MAP_FAILED;
         try {
@@ -100,13 +102,13 @@ public:
 
             smartLights = (SmartLight*) mapSConfig;
         } catch (char const* str) {
-            cout << "Error in creating the Shared Memory Map:\n\t" << str << endl;
+            std :: cout << "Error in creating the Shared Memory Map:\n\t" << str << endl;
             if (fdSConfig != -1)
                 close(fdSConfig);
             fdSConfig = -1;
             smartLights = new SmartLight[MaxSmartLights];
         } catch (...) {
-            cout << "Error in creating the Shared Memory Map\n";
+            std :: cout << "Error in creating the Shared Memory Map\n";
             smartLights = new SmartLight[MaxSmartLights];
         }
     }
@@ -121,10 +123,11 @@ public:
                 delete[] smartLights;
             }
         } catch (...) {
-            cout << "Error in deleting the Shared Memory Map\n";
+            std :: cout << "Error in deleting the Shared Memory Map\n";
         }
-        fdSConfig  = -1;
-        mapSConfig = (char *) MAP_FAILED;
+        alertCounter = 0;
+        fdSConfig    = -1;
+        mapSConfig   = (char *) MAP_FAILED;
     }
 
     // Initialization of the server. Additional options can be provided here
@@ -431,7 +434,7 @@ private:
             }
     
             sl_copy.ImportFromJson(jsonSettings);
-            cout << sl_copy.Repr() << endl;
+            std :: cout << sl_copy.Repr() << endl;
 
             if (sl_copy.HasValidConfig()) {
                 smartLights[id].UpdateFromSL(sl_copy);
@@ -441,6 +444,11 @@ private:
                 // invalid configuration -> the previous value remain unchanged
                 response.send(Http::Code::Bad_Request, "Invalid new setting configuration\n");
             }
+            
+            // TODO
+            string str = "mosquitto_pub -t test/t1 -m \"SOMEONE IS TRYING TO TEMPER WITH THE INSTALLATION WHILE POWERED UP!\" ";
+            const char *command = str.c_str();
+            system(command);
         }
         catch (...) {
             response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
@@ -836,56 +844,3 @@ private:
     Rest::Router router;
 };
 
-int main(int argc, char *argv[]) {
-
-    // This code is needed for gracefull shutdown of the server when no longer needed.
-    sigset_t signals;
-    if (sigemptyset(&signals) != 0
-            || sigaddset(&signals, SIGTERM) != 0
-            || sigaddset(&signals, SIGINT) != 0
-            || sigaddset(&signals, SIGHUP) != 0
-            || pthread_sigmask(SIG_BLOCK, &signals, nullptr) != 0) {
-        perror("install signal handler failed");
-        return 1;
-    }
-
-    // Set a port on which your server to communicate
-    Port port(9080);
-
-    // Number of threads used by the server
-    int thr = 2;
-
-    if (argc >= 2) {
-        port = static_cast<uint16_t>(std::stol(argv[1]));
-
-        if (argc == 3)
-            thr = std::stoi(argv[2]);
-    }
-
-    Address addr(Ipv4::any(), port);
-
-    cout << "Cores = " << hardware_concurrency() << endl;
-    cout << "Using " << thr << " threads" << endl;
-
-    // Instance of the class that defines what the server can do.
-    SmartLightEndpoint stats(addr);
-
-    // Initialize and start the server
-    stats.init(thr);
-    stats.start();
-
-
-    // Code that waits for the shutdown sinal for the server
-    int signal = 0;
-    int status = sigwait(&signals, &signal);
-    if (status == 0)
-    {
-        std::cout << "received signal " << signal << std::endl;
-    }
-    else
-    {
-        std::cerr << "sigwait returns " << status << std::endl;
-    }
-
-    stats.stop();
-}
