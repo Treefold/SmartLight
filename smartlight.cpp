@@ -325,17 +325,17 @@ private:
             }
 
             std::ofstream file;
-            string file_name = "playing_" + std::to_string(id) + ".mp3";
+            string file_name = "playing_" + std::to_string(id) + ".mp3\n";
             if (playnow == 1) {
                 file.open(file_name, std::ofstream::out);
                 file<<file_content;
                 file.close();
-                response.send(Http::Code::Ok, "Playing the song right now.");
+                response.send(Http::Code::Ok, "Playing the song right now.\n");
             } else {
                 file.open(file_name, std::ofstream::app);
                 file<<file_content;
                 file.close();
-                response.send(Http::Code::Ok, "Song added to queue.");
+                response.send(Http::Code::Ok, "Song added to queue.\n");
             }
         }
         catch (...) {
