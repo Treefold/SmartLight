@@ -54,23 +54,28 @@ namespace Generic {
     }
 
     void printFatal(const string& message) {
-    	std::cerr << "[fatal] " << message << std::endl;
+    	std::cerr << "\033[31m[fatal]\033[0m ";
+    	std::cerr << message << std::endl;
     }
 
     void printError(const string& message) {
-    	std::cerr << "[error] " << message << std::endl;
+    	std::cerr << "\033[91m[error]\033[0m ";
+    	std::cerr << message << std::endl;
     }
 
     void printWarn(const string& message) {
-    	std::cerr << "[warn] " << message << std::endl;
+    	std::cerr << "\033[93m[warn]\033[0m ";
+    	std::cerr << message << std::endl;
     }
 
     void printInfo(const string& message) {
-    	std::cout << "[info] " << message << std::endl;
+    	std::cout << "\033[92m[info]\033[0m ";
+    	std::cout << message << std::endl;
     }
 
     void printDebug(const string& message) {
-    	std::cout << "[debug] " << message << std::endl;
+    	std::cout << "\033[96m[debug]\033[0m ";
+    	std::cout << message << std::endl;
     }
 }
 
