@@ -608,8 +608,6 @@ private:
             j["temperature"] = this->temperature;
             j["s_luminosity"] = this->sensorInfo[0];
             j["s_temperature"] = this->sensorInfo[1];
-            j["hour"] = this->hours[0];
-            j["minute"] = this->minutes[0];
 
         }
 
@@ -634,10 +632,6 @@ private:
                 this->sensorInfo[0] = j["s_luminosity"];
             if (j["s_temperature"] != null)
                 this->sensorInfo[1] = j["s_temperature"];
-            if (j["hour"] != null)
-                this->hours[0] = j["hour"];
-            if (j["minute"] != null)
-                this->minutes[0] = j["minute"];
 
         }
 
