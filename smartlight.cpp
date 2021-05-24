@@ -188,6 +188,7 @@ private:
         Routes::Get(router, "/rgb/:id", Routes::bind(&SmartLightEndpoint::getRGB, this));
         Routes::Post(router, "/alarm/:id/:hour/:minute", Routes::bind(&SmartLightEndpoint::AddAlarm, this));
         Routes::Delete(router, "/alarm/:id/:hour/:minute", Routes::bind(&SmartLightEndpoint::RemoveAlarm, this));
+        Routes::Get(router, "/alarm/:id", Routes::bind(&SmartLightEndpoint::GetAlarms, this));
  
         Routes::Post(router, "/play/:id/:playnow", Routes::bind(&SmartLightEndpoint::PlaySong, this));
         Routes::Post(router, "/mode/:id/:mode", Routes::bind(&SmartLightEndpoint::setMode, this));
@@ -480,10 +481,12 @@ private:
     void AddAlarm(const Rest::Request& request, Http::ResponseWriter response){
 
         try {
+            
             int id = std::stoi(request.param(":id").as<std::string>());
-            int hours = std::stoi(request.param(":hours").as<std::string>());
-            int minutes = std::stoi(request.param(":minutes").as<std::string>());
-
+           
+            int hours = std::stoi(request.param(":hour").as<std::string>());
+            
+            int minutes = std::stoi(request.param(":minute").as<std::string>());
             // This is a guard that prevents editing the same value by two concurent threads. 
             Guard guard(smartLightLock);
 
@@ -491,22 +494,18 @@ private:
                 response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
                 return;
             }
-            
             if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) { // test time
                 response.send(Http::Code::Bad_Request, "The Time is not valid\n");
                 return;
             }
-
             if (! smartLights[id].IsInit()) { // don't use if not init
                 response.send(Http::Code::Bad_Request, "This smart light was not init\n");
                 return;
             }
-
             if(!smartLights[id].AddHour(hours,minutes))
                 response.send(Http::Code::Bad_Request, "You have reached the maximum number of alarms, please remove some unused alarms\n");
             else
                 response.send(Http::Code::Ok, "The alarm was succesfully set\n");
-    
         }
         catch (...) {
             response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
@@ -518,8 +517,8 @@ private:
 
         try {
             int id = std::stoi(request.param(":id").as<std::string>());
-            int hours = std::stoi(request.param(":hours").as<std::string>());
-            int minutes = std::stoi(request.param(":minutes").as<std::string>());
+            int hours = std::stoi(request.param(":hour").as<std::string>());
+            int minutes = std::stoi(request.param(":minute").as<std::string>());
 
             // This is a guard that prevents editing the same value by two concurent threads. 
             Guard guard(smartLightLock);
@@ -553,6 +552,35 @@ private:
 
     }
 
+    void GetAlarms(const Rest::Request& request, Http::ResponseWriter response){
+
+        try {
+          
+            int id = std::stoi(request.param(":id").as<std::string>());
+        
+            // This is a guard that prevents editing the same value by two concurent threads. 
+            Guard guard(smartLightLock);
+          
+            if (id < 0 || id >= MaxSmartLights) { // test Id
+                response.send(Http::Code::Bad_Request, "The Id is unavailable\n");
+                return;
+            }
+           
+            if (! smartLights[id].IsInit()) { // don't use if not init
+                response.send(Http::Code::Bad_Request, "This smart light was not init\n");
+                return;
+            }
+            string a = smartLights[id].getAlarms(); 
+            
+            response.send(Http::Code::Ok, a + "\n");
+           
+        }
+        catch (...) {
+            response.send(Http::Code::Internal_Server_Error, "Something unexpected happened\n");
+        }    
+
+    }
+
 
 
     // The class of the SmartLight
@@ -572,8 +600,8 @@ private:
             this->luminosity = 100;
             this->temperature = 0;
             for (int i=0;i<=9;i++){
-                this->hours[i]=0;
-                this->minutes[i]=0;
+                this->hours[i]=-1;
+                this->minutes[i]=-1;
             }
                 
         } 
@@ -755,25 +783,36 @@ private:
             else return false;
         }
 
+        
+        string getAlarms(){
+
+            string resp = "";
+            for (int i=0;i<=9;i++)
+                resp += std::to_string(this->hours[i]) + " : " +  std::to_string(this->minutes[i]) + "\n";
+            return resp;
+        }
+        
         bool AddHour(int hour, int minute){
             
             if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60)  // test time
                 return false;
+        
             bool exists = false;
             int poz = -1; 
             for (int i=0;i<=9;i++){
-                if(this->hours[i] == -1 && this->minutes[i] == -1 && poz != -1)
+                if(this->hours[i] == -1 && this->minutes[i] == -1 && poz == -1)
                     poz = i;
                 else if(this->hours[i] == hour && this->minutes[i] == minute)
                     exists = true;
             }
-
+        
             if(poz==-1)
                 return false;
             if(!exists){
                 this->hours[poz] = hour;
                 this->minutes[poz] = minute;
             }
+            
             return true;
             
         }
