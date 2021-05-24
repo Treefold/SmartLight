@@ -7,7 +7,15 @@
 ## Sistem requirements
 
 - Linux (preferably Unbuntu 18 or later)
-- Windows / MacOS with VM (see more about this in **Instructions**)
+- Windows / MacOS with VM (see more about this in [**Instructions**](https://github.com/Treefold/SmartLight/blob/main/README.md#instructions))
+
+### Libraries and dependecies needed
+
+See more on how to install them in [**Installing the dependencies**](https://github.com/Treefold/SmartLight/blob/aef9e5cbc2f3b164e6b45a3e0472d3f155057536/README.md#installing-the-dependencies)
+
+- pistache
+- nlohmann-json3-dev
+- gcc (for c++14 or later)
 
 ## Instructions
 
@@ -57,7 +65,7 @@ And install `g++` command:
 
 	sudo apt install g++
 
-### Compile our project:
+### Compile and run our project:
 _If you don't have Linux, all of those will be done in the VM's cmd_
 
 Go in the `Smartlight` folder: 
