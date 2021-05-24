@@ -1,0 +1,21 @@
+{
+  "input_buffers":{
+    "settings":{
+      "id": "0",
+      "buffer-tokens":[
+        {
+          "name":"manual",
+          "value":"1"
+        },
+        {
+          "name":"temperature",
+          "value":"79"
+        },
+        {
+          "name":"luminosity",
+          "value":"10"
+        }
+      ]
+    }
+  }
+}
