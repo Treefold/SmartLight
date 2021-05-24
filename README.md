@@ -54,7 +54,6 @@ Then get the `pistache` repository:
 And install it:
 
 	sudo apt update \
-	
 	sudo apt install libpistache-dev
 
 Then install `nlohmann-json3-dev`:
