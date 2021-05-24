@@ -103,6 +103,8 @@ Open another console tab and run one of the following:
 	
 	curl -X POST -H "Content-Type: application/json" -d @window_settings.json http://localhost:9080/settings
 	
+	curl -X POST -H "Content-Type: application/json" -d @smartlight_settings.json http://localhost:9080/settings
+	
 	mosquitto_pub -t test/t1 -m "impact: 10"
 
 ### Light
