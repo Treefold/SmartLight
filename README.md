@@ -20,13 +20,13 @@ See more on how to install them in [**Installing the dependencies**](https://git
 
 ## Instructions
 
-### Downloads (skip on Linux):
+### Downloads (skip on Linux)
 
 Download and Install the VM: https://www.oracle.com/virtualization/technologies/vm/downloads/virtualbox-downloads.html
 
 Download the Ubuntu Server ISO: https://ubuntu.com/download/server (Option 2 - Manual server installation)
 
-### Setting up the VM (skip on Linux):
+### Setting up the VM (skip on Linux)
 
 In virtualbox click create new, give it a name and select `Linux - Ubuntu(64-bit)` and change the values as you need them.
 
@@ -40,7 +40,7 @@ Start the VM normally and procede with the installation of the OS.
 
 When done, **reboot** and **log in**.
 
-### Installing the dependencies: 
+### Install the dependencies
 
 _If you don't have Linux, all of those should be done in the VM's cmd_
 
@@ -62,6 +62,8 @@ Then installn`mosquitto`:
 	
 	sudo apt update
 	
+	sudo apt install mosquitto
+	sudo apt install mosquitto-clients
 	sudo apt install libmosquitto-dev
 
 Then install `nlohmann-json3-dev`:
@@ -72,7 +74,7 @@ And install `g++` command:
 
 	sudo apt install g++
 
-### Compile and run our project:
+### Compile and run our project
 _If you don't have Linux, all of those will be done in the VM's cmd_
 
 Go in the `Smartlight` folder: 
@@ -82,5 +84,29 @@ Go in the `Smartlight` folder:
 Compile and run the project:
 
 	g++ ServerMQTT.cpp -o server -lpistache -lcrypto -lssl -lpthread -std=c++17 -lmosquitto \
-	&& ./server 
+	&& ./server
+	
+### Interact with the server
 
+Open another console tab and run one of the following:
+	
+	curl -X POST http://localhost:9080/init/0
+	curl -X GET  http://localhost:9080/settings/0
+	curl -X POST -H "Content-Type: application/json" -d @window_settings.json http://localhost:9080/settings
+	mosquitto_pub -t test/t1 -m "impact: 10"
+
+To give your custom settings run the following command:
+	
+	curl -X POST -H "Content-Type: application/json" -d @user_settings_sample.json http://localhost:9080/settings
+	
+you can replace `user_settings_sample.json` with any `.json` with the desired settings. 
+
+To trigger temper alerts run:
+	
+	mosquitto_pub -t test/t1 -m "impact: 10"
+	mosquitto_pub -t test/t1 -m "impact: 10"
+	mosquitto_pub -t test/t1 -m "impact: 10"
+
+or
+
+	mosquitto_pub -t test/t1 -m "impact: 70"
