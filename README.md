@@ -2,7 +2,7 @@
 
 ## Analysis report
 
-[Raport de analiza SmartLight.pdf](https://github.com/Treefold/SmartLight/blob/aef9e5cbc2f3b164e6b45a3e0472d3f155057536/Raport%20de%20analiza%20SmartLight.pdf)
+[Raport de analiza SmartLight.pdf](https://github.com/Treefold/SmartLight/blob/main/Raport%20de%20analiza%20SmartLight.pdf)
 
 ## Sistem requirements
 
