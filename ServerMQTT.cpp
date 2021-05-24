@@ -20,6 +20,7 @@
 
 using namespace std;
 using namespace Pistache;
+using namespace Generic;
 
 // General advice: pay atetntion to the namespaces that you use in various contexts. Could prevent headaches.
 
@@ -27,9 +28,9 @@ using namespace Pistache;
 
 
 void onConnect(struct mosquitto *mosq, void *obj, int rc) {
-	std :: cout << "ID: " << *(int *) obj << "\n";
+	printInfo("ID: " + to_string(*(int *) obj));
 	if (rc) {
-		std :: cout << "[error] Error with result code: " << rc << "\n";
+		printFatal("Error with result code: " + to_string(rc));
 		exit(-1);
 	}
 	mosquitto_subscribe(mosq, NULL, "test/t1", 0);
@@ -46,16 +47,16 @@ void onMessage(struct mosquitto *mosq, void *obj, const struct mosquitto_message
     }
 
     if (value != 0) {
-        std :: cout << "[info] New message with topic " << msg->topic << ": " << value << "\n";
+        printInfo("New message with topic " + msg->topic + ": " + to_string(value));
         alertCounter ++;
         if (value >= 50 || alertCounter >= 3) {
-            std :: cout << "[error] Stop tempering with the installation NOW! Shut down the installation first!\n";
+            printError("Stop tempering with the installation NOW! Shut down the installation first!");
             alertCounter = 0;
         } else {
-            std :: cout << "[error] Danger!!\n";
+            printWarn("Danger!!");
         }
     } else {
-        std :: cout << "[info] New message with topic " << msg->topic << ": " << s << "\n";
+        printInfo("New message with topic " + msg->topic + ": " + s);
     }   
 }
 
@@ -88,8 +89,8 @@ int main(int argc, char *argv[]) {
 
     Address addr(Ipv4::any(), port);
 
-    std :: cout << "Cores = " << hardware_concurrency() << endl;
-    std :: cout << "Using " << thr << " threads" << endl;
+    printInfo("Cores = " + to_string(hardware_concurrency()));
+    printInfo("Using " + thr + " threads");
 
     // Instance of the class that defines what the server can do.
     SmartLightEndpoint stats(addr);
@@ -110,7 +111,7 @@ int main(int argc, char *argv[]) {
 
     rc = mosquitto_connect(mosq, "localhost", 1883, 10);
     if(rc) {
-        std :: cout << "[warn] Could not connect to Broker with return code " << rc << "\n";
+        printFatal("Could not connect to Broker with return code " + to_string(rc));
         return -1;
     }
 
@@ -128,11 +129,11 @@ int main(int argc, char *argv[]) {
     int status = sigwait(&signals, &signal);
     if (status == 0)
     {
-        std :: cout << "[info] received signal " << signal << std::endl;
+        printInfo("received signal " + to_string(signal));
     }
     else
     {
-        std :: cerr << "[info] sigwait returns " << status << std::endl;
+        printInfo("sigwait returns " + to_string(status));
     }
 
   stats.stop();

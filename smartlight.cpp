@@ -53,6 +53,26 @@ namespace Generic {
         response.send(Http::Code::Ok, "Service is Ready!\n");
     }
 
+    void printFatal(const string& message) {
+    	std::cerr << "[fatal] " << message << std::endl;
+    }
+
+    void printError(const string& message) {
+    	std::cerr << "[error] " << message << std::endl;
+    }
+
+    void printWarn(const string& message) {
+    	std::cerr << "[warn] " << message << std::endl;
+    }
+
+    void printInfo(const string& message) {
+    	std::cout << "[info] " << message << std::endl;
+    }
+
+    void printDebug(const string& message) {
+    	std::cout << "[debug] " << message << std::endl;
+    }
+
 }
 
 int    alertCounter = 0;
@@ -70,7 +90,7 @@ public:
         mapSConfig = (char *) MAP_FAILED;
         try {
             const char* filepath = "SettingConfigs.data";
-            // cout << MaxSmartLights * sizeof(SmartLight) << endl;
+            printDebug(to_string(MaxSmartLights * sizeof(SmartLight)));
             
             fdSConfig = open(filepath, O_RDWR, (mode_t)0600);
 
@@ -102,13 +122,13 @@ public:
 
             smartLights = (SmartLight*) mapSConfig;
         } catch (char const* str) {
-            std :: cout << "Error in creating the Shared Memory Map:\n\t" << str << endl;
+            printError("Error in creating the Shared Memory Map:\n\t" + str);
             if (fdSConfig != -1)
                 close(fdSConfig);
             fdSConfig = -1;
             smartLights = new SmartLight[MaxSmartLights];
         } catch (...) {
-            std :: cout << "Error in creating the Shared Memory Map\n";
+            printError("Error in creating the Shared Memory Map");
             smartLights = new SmartLight[MaxSmartLights];
         }
     }
@@ -123,7 +143,7 @@ public:
                 delete[] smartLights;
             }
         } catch (...) {
-            std :: cout << "Error in deleting the Shared Memory Map\n";
+            printError("Error in deleting the Shared Memory Map");
         }
         alertCounter = 0;
         fdSConfig    = -1;
@@ -435,7 +455,7 @@ private:
             }
     
             sl_copy.ImportFromJson(jsonSettings);
-            std :: cout << sl_copy.Repr() << endl;
+            printInfo(sl_copy.Repr());
 
             if (sl_copy.HasValidConfig()) {
                 smartLights[id].UpdateFromSL(sl_copy);
