@@ -14,6 +14,7 @@
 See more on how to install them in [**Installing the dependencies**](https://github.com/Treefold/SmartLight/blob/aef9e5cbc2f3b164e6b45a3e0472d3f155057536/README.md#installing-the-dependencies)
 
 - pistache
+- mosquitto
 - nlohmann-json3-dev
 - gcc (for c++14 or later)
 
@@ -47,14 +48,21 @@ First, clone this repository
 	
 	git clone https://github.com/Treefold/SmartLight.git
 
-Then get the `pistache` repository:
+Then install `pistache`:
 
 	sudo add-apt-repository ppa:pistache+team/unstable
 	
-And install it:
-
-	sudo apt update \
+	sudo apt update
+	
 	sudo apt install libpistache-dev
+
+Then installn`mosquitto`:
+
+	sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+	
+	sudo apt update
+	
+	sudo apt install libmosquitto-dev
 
 Then install `nlohmann-json3-dev`:
 
@@ -73,6 +81,6 @@ Go in the `Smartlight` folder:
 	
 Compile and run the project:
 
-	g++ smartlight.cpp -o smartlight -lpistache -lcrypto -lssl -lpthread -std=c++17 && \
-	./smartlight 
+	g++ ServerMQTT.cpp -o server -lpistache -lcrypto -lssl -lpthread -std=c++17 -lmosquitto \
+	&& ./server 
 
