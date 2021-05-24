@@ -1,0 +1,67 @@
+{
+   "input_buffers":{
+      "settings":{
+         "token_delimitators":"",
+         "protocol":"HTTP",
+         "method":"POST",
+         "prefix":"localhost:9080/settings",
+         "id":"0",
+         "buffer-tokens":[
+            {
+               "name":"impact",
+               "description":"Sensor that lets the user know whether someone tries to temper with the sistem while powered up",
+               "value":"100",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            },
+            {
+               "name":"manual",
+               "description":"Set the values manually",
+               "value":"1",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            },
+            {
+               "name":"temperature",
+               "description":"Temperature value to be set",
+               "value":"35",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            },
+            {
+               "name":"luminosity",
+               "description":"Luminosity value to be set",
+               "value":"10",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            },
+            {
+               "name":"s_temperature",
+               "description":"Sensor that gives temperature",
+               "value":"40",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            },
+            {
+               "name":"s_luminosity",
+               "description":"Sensor that gives luminosity",
+               "value":"30",
+               "token_type":"string",
+               "byte_size":256,
+               "regex-rule":"[a-zA-Z]*",
+               "optional":false
+            }
+         ]
+      }
+   }
+}
