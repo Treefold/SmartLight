@@ -113,3 +113,7 @@ To trigger temper alerts run:
 or
 
 	mosquitto_pub -t test/t1 -m "impact: 70"
+
+### Shut down
+
+Press `Ctrl-C` and then `Enter`.
